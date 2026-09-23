@@ -15,8 +15,12 @@ The set of filters sent to LinkedIn: title, location, date posted and work mode.
 _Avoid_: Query, filters, params
 
 **Saved search**:
-A named set of search criteria kept in the user's config, so a run can repeat it without retyping.
+A named search kept in the user's config: its search criteria plus the profile its offers are judged against, so a run can repeat it without retyping.
 _Avoid_: Preset, search profile
+
+**Ad-hoc search**:
+A one-off search defined entirely on the command line for a single run, replacing the saved searches for that run.
+_Avoid_: Temporary search, quick search
 
 **Work mode**:
 Where the work happens: remote, hybrid or on-site.
