@@ -1,0 +1,15 @@
+{
+  "name": "prototype-verdict-prompt",
+  "private": true,
+  "type": "module",
+  "description": "PROTOTYPE, throwaway: tries the verdict prompt against real LinkedIn offers",
+  "scripts": {
+    "start": "tsx run.ts"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "openai": "^6.0.0",
+    "tsx": "^4.19.0",
+    "zod": "^4.0.0"
+  }
+}

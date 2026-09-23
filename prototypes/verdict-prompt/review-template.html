@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verdict Review</title>
+<style>
+  :root { --bg:#fafaf9; --panel:#fff; --text:#1c1917; --muted:#78716c; --line:#e7e5e4; --accent:#2563eb; --ok:#15803d; --no:#b91c1c; --warn:#a16207; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#171717; --panel:#1f1f1f; --text:#e7e5e4; --muted:#a8a29e; --line:#333; --accent:#60a5fa; --ok:#4ade80; --no:#f87171; --warn:#facc15; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 24px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  .kv { display: grid; grid-template-columns: 130px 1fr; gap: 4px 12px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; }
+  .tally { display: flex; gap: 20px; flex-wrap: wrap; position: sticky; top: 0; z-index: 1; }
+  .tally b { font-size: 20px; display: block; }
+  .card h2 { font-size: 17px; margin: 0; }
+  .card h2 a { color: inherit; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+  .badge { display:inline-block; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; padding:2px 8px; border-radius:999px; border:1px solid currentColor; }
+  .accepted { color: var(--ok); } .rejected { color: var(--no); } .unjudged { color: var(--warn); }
+  .reason { margin: 8px 0; }
+  .fields { font-size: 13px; color: var(--muted); }
+  .fields span { margin-right: 14px; }
+  details { margin-top: 8px; } summary { cursor: pointer; color: var(--accent); font-size: 13px; }
+  pre { white-space: pre-wrap; font: 13px/1.5 ui-monospace, monospace; max-height: 360px; overflow: auto; background: var(--bg); padding: 10px; border-radius: 6px; }
+  .judge { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  button { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; }
+  button.on-agree { border-color: var(--ok); color: var(--ok); font-weight: 600; }
+  button.on-disagree { border-color: var(--no); color: var(--no); font-weight: 600; }
+  input[type=text] { flex: 1; min-width: 180px; font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  .primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Verdict review</h1>
+  <p class="lead">PROTOTYPE. Question: with a profile that only says what kind of work you want, does the model accept and reject the same offers you would? For each offer, click <em>Agree</em> or <em>Disagree</em> with the model's verdict, add a note if it's wrong, then press <em>Copy my judgements</em> and paste the result back to Claude.</p>
+
+  <section class="panel"><dl class="kv" id="context"></dl></section>
+  <section class="panel tally" id="tally"></section>
+  <div id="cards"></div>
+  <section class="panel">
+    <button class="primary" id="copy">Copy my judgements</button>
+    <span id="copied" class="fields"></span>
+    <details><summary>System prompt used</summary><pre id="prompt"></pre></details>
+  </section>
+</main>
+<script>
+const DATA = /*DATA*/null;
+const judgements = {}; // offer id -> { stance: "agree" | "disagree", note }
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k === "class" ? (node.className = v) : node.setAttribute(k, v);
+  for (const c of children) node.append(c);
+  return node;
+}
+
+function renderContext() {
+  const ctx = document.getElementById("context");
+  const rows = [
+    ["Profile", DATA.profile],
+    ["Search", `${DATA.search.keywords} · ${DATA.search.location} · posted within ${DATA.search.tpr}`],
+    ["Model", `${DATA.model}, reasoning effort low`],
+    ["Cost", `${DATA.tokens.inTok} input + ${DATA.tokens.outTok} output tokens ≈ $${DATA.tokens.cost.toFixed(4)}`],
+  ];
+  for (const [k, v] of rows) ctx.append(el("dt", {}, k), el("dd", {}, v));
+  document.getElementById("prompt").textContent = DATA.systemPrompt;
+}
+
+function renderTally() {
+  const count = (fn) => DATA.results.filter(fn).length;
+  const verdictOf = (r) => (r.result.kind === "judged" ? r.result.verdict.verdict : "unjudged");
+  const stats = [
+    ["Model accepted", count((r) => verdictOf(r) === "accepted")],
+    ["Model rejected", count((r) => verdictOf(r) === "rejected")],
+    ["Unjudged", count((r) => verdictOf(r) === "unjudged")],
+    ["You agree", Object.values(judgements).filter((j) => j.stance === "agree").length],
+    ["You disagree", Object.values(judgements).filter((j) => j.stance === "disagree").length],
+    ["Not reviewed", DATA.results.length - Object.values(judgements).filter((j) => j.stance).length],
+  ];
+  const t = document.getElementById("tally");
+  t.replaceChildren(...stats.map(([k, v]) => el("div", {}, el("b", {}, String(v)), k)));
+}
+
+function renderCards() {
+  const root = document.getElementById("cards");
+  for (const { offer, result } of DATA.results) {
+    const verdict = result.kind === "judged" ? result.verdict.verdict : "unjudged";
+    const card = el("article", { class: "panel card" });
+    card.append(
+      el("h2", {}, el("a", { href: `https://www.linkedin.com/jobs/view/${offer.id}`, target: "_blank", rel: "noopener" }, offer.title)),
+      el("div", { class: "meta" }, [offer.company, offer.location, offer.postedDate, offer.salary].filter(Boolean).join(" · ")),
+      el("span", { class: `badge ${verdict}` }, verdict),
+      el("p", { class: "reason" }, result.kind === "judged" ? result.verdict.reason : result.why),
+    );
+    if (result.kind === "judged") {
+      const v = result.verdict;
+      card.append(el("div", { class: "fields" },
+        el("span", {}, `Work mode: ${v.workMode ?? "not stated"}`),
+        el("span", {}, `Seniority: ${v.seniority ?? "unclear"} (LinkedIn says: ${offer.criteria["Seniority level"] ?? "-"})`),
+        el("span", {}, `Stack: ${v.techStack.join(", ") || "-"}`),
+      ));
+    }
+    const desc = el("details", {}, el("summary", {}, "Full description"), el("pre", {}, offer.description));
+    card.append(desc);
+
+    const agree = el("button", {}, "Agree");
+    const disagree = el("button", {}, "Disagree");
+    const note = el("input", { type: "text", placeholder: "Why is the model wrong? (optional)" });
+    const set = (stance) => {
+      judgements[offer.id] = { ...(judgements[offer.id] ?? {}), stance };
+      agree.className = stance === "agree" ? "on-agree" : "";
+      disagree.className = stance === "disagree" ? "on-disagree" : "";
+      renderTally();
+    };
+    agree.onclick = () => set("agree");
+    disagree.onclick = () => set("disagree");
+    note.oninput = () => { judgements[offer.id] = { ...(judgements[offer.id] ?? {}), note: note.value }; };
+    card.append(el("div", { class: "judge" }, agree, disagree, note));
+    root.append(card);
+  }
+}
+
+document.getElementById("copy").onclick = async () => {
+  const lines = DATA.results.map(({ offer, result }) => {
+    const j = judgements[offer.id] ?? {};
+    const model = result.kind === "judged" ? result.verdict.verdict : "unjudged";
+    return `${offer.id} | ${offer.title} @ ${offer.company} | model: ${model} | you: ${j.stance ?? "not reviewed"}${j.note ? ` | ${j.note}` : ""}`;
+  });
+  const text = `Profile: ${DATA.profile}\n` + lines.join("\n");
+  try { await navigator.clipboard.writeText(text); document.getElementById("copied").textContent = "Copied."; }
+  catch { prompt("Copy this:", text); }
+};
+
+renderContext();
+renderTally();
+renderCards();
+</script>
+</body>
+</html>
