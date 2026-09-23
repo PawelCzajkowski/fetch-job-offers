@@ -63,7 +63,7 @@ One invocation of the tool, covering one or more saved searches, that produces o
 _Avoid_: Job, execution, fetch
 
 **Report**:
-The output of a run, written as both Markdown and HTML, listing accepted offers in full and rejected offers in a collapsed section.
+The output of a run, written as both Markdown and HTML: one table of every offer the run handled (accepted, rejected and unjudged) with its verdict, followed by each offer's details.
 _Avoid_: Digest, export, results file
 
 **Seen offer**:
