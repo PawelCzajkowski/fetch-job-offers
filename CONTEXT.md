@@ -25,8 +25,8 @@ _Avoid_: Workplace type, location type
 ### Judging
 
 **Profile**:
-The user's free-text description of what they want from a job (skills, domain, work style), which every offer is judged against.
-_Avoid_: Preferences, user context, CV
+A short statement of the kind of work a saved search is looking for (for example "Java development"), which that search's offers are judged against. Each saved search has its own profile, and it says nothing about the user themselves.
+_Avoid_: Preferences, user context, CV, about me
 
 **Verdict**:
 The LLM's decision on one offer: accepted or rejected, with a one-line reason.
