@@ -1,0 +1,9 @@
+{
+  "name": "prototype-report-layout",
+  "private": true,
+  "type": "module",
+  "description": "PROTOTYPE, throwaway: three layouts for the per-run report, from real sample data",
+  "scripts": {
+    "start": "node generate.ts && open 'report-prototype.html'"
+  }
+}

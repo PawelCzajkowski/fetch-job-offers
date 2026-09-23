@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report Layouts</title>
+<!-- PROTOTYPE, throwaway: three layouts for the per-run HTML report, switchable via ?variant=A|B|C -->
+<style>
+  :root { --bg:#fafaf9; --panel:#fff; --text:#1c1917; --muted:#78716c; --line:#e7e5e4; --soft:#f5f5f4; --accent:#2563eb; --ok:#15803d; --no:#b91c1c; --warn:#a16207; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#141414; --panel:#1d1d1d; --text:#e7e5e4; --muted:#a8a29e; --line:#303030; --soft:#262626; --accent:#60a5fa; --ok:#4ade80; --no:#f87171; --warn:#facc15; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 system-ui, sans-serif; }
+  a { color: var(--accent); }
+  button, select, input { font: inherit; color: var(--text); }
+  .muted { color: var(--muted); }
+  .badge { display:inline-block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; padding:1px 8px; border-radius:999px; border:1px solid currentColor; white-space:nowrap; }
+  .accepted { color: var(--ok); } .rejected { color: var(--no); } .unjudged { color: var(--warn); }
+  .chip { display:inline-block; font-size:12px; padding:1px 8px; border-radius:6px; background:var(--soft); margin:0 4px 4px 0; }
+  .desc p { margin: 0 0 8px; } .desc ul { margin: 0 0 8px; padding-left: 20px; }
+  .btn { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; text-decoration: none; display: inline-block; font-size: 14px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* A: digest */
+  .a-wrap { max-width: 760px; margin: 0 auto; padding: 32px 16px 96px; }
+  .a-wrap h1 { font-size: 26px; margin: 0 0 4px; }
+  .a-search { margin-top: 36px; border-top: 2px solid var(--text); padding-top: 12px; }
+  .a-search h2 { font-size: 20px; margin: 0; font-family: ui-monospace, monospace; }
+  .a-offer { padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .a-offer h3 { margin: 0 0 2px; font-size: 17px; }
+  .a-why { font-style: italic; margin: 6px 0; }
+  .a-wrap details > summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+  .a-plain { white-space: pre-wrap; font-size: 14px; background: var(--soft); padding: 12px; border-radius: 6px; margin-top: 8px; }
+  .a-rejected li { margin-bottom: 6px; }
+
+  /* B: triage table */
+  .b-wrap { padding: 20px 16px 96px; max-width: 1280px; margin: 0 auto; }
+  .b-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+  .b-head h1 { font-size: 20px; margin: 0; }
+  .b-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 14px 0; }
+  .b-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .b-seg button { border: 0; background: var(--panel); padding: 5px 12px; cursor: pointer; }
+  .b-seg button.on { background: var(--text); color: var(--bg); }
+  .b-tools select, .b-tools input { padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); }
+  .b-tools input { min-width: 200px; flex: 1; }
+  .b-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th { text-align: left; font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); cursor: pointer; white-space: nowrap; user-select: none; position: sticky; top: 0; background: var(--panel); }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr.b-row { cursor: pointer; } tr.b-row:hover td { background: var(--soft); }
+  tr.b-detail td { background: var(--soft); padding: 14px 18px; }
+  .b-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 20px; }
+  @media (max-width: 720px) { .b-detail-grid { grid-template-columns: 1fr; } }
+  .b-stack { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+
+  /* C: inbox */
+  .c-wrap { display: grid; grid-template-columns: 360px minmax(0, 1fr); height: 100vh; }
+  @media (max-width: 800px) { .c-wrap { grid-template-columns: 1fr; height: auto; } }
+  .c-list { border-right: 1px solid var(--line); overflow-y: auto; background: var(--panel); padding-bottom: 80px; }
+  .c-top { padding: 16px; border-bottom: 1px solid var(--line); }
+  .c-top h1 { font-size: 17px; margin: 0; }
+  .c-tabs { display: flex; border-bottom: 1px solid var(--line); }
+  .c-tabs button { flex: 1; border: 0; background: none; padding: 10px 6px; cursor: pointer; border-bottom: 2px solid transparent; font-size: 14px; }
+  .c-tabs button.on { border-bottom-color: var(--accent); font-weight: 600; }
+  .c-item { padding: 12px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .c-item.on { background: var(--soft); box-shadow: inset 3px 0 0 var(--accent); }
+  .c-item .t { font-weight: 600; font-size: 14px; }
+  .c-item .s { font-size: 13px; color: var(--muted); }
+  .c-pane { overflow-y: auto; padding: 28px 32px 96px; }
+  @media (max-width: 800px) { .c-pane { padding: 20px 16px 96px; } }
+  .c-pane h2 { margin: 0; font-size: 22px; }
+  .c-actions { display: flex; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
+  .c-callout { border-left: 3px solid currentColor; padding: 8px 12px; background: var(--soft); border-radius: 0 6px 6px 0; margin-bottom: 16px; }
+  .c-callout span { color: var(--text); }
+  .c-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .c-fields section { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; background: var(--panel); }
+  .c-fields h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .c-fields dl { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 3px 10px; margin: 0; font-size: 14px; }
+  .c-fields dt { color: var(--muted); } .c-fields dd { margin: 0; }
+
+  /* prototype switcher: deliberately not part of any design */
+  .proto-bar { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; background: #111; color: #fff; padding: 6px 8px; border-radius: 999px; box-shadow: 0 6px 24px rgba(0,0,0,.35); font: 600 13px system-ui; z-index: 99; }
+  .proto-bar button { background: #333; color: #fff; border: 0; border-radius: 999px; width: 30px; height: 30px; cursor: pointer; font-size: 15px; }
+  .proto-bar span { min-width: 170px; text-align: center; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="proto-bar"><button id="prev" aria-label="Previous variant">&larr;</button><span id="label"></span><button id="next" aria-label="Next variant">&rarr;</button></div>
+<script>
+const DATA = /*DATA*/null;
+const { run, offers } = DATA;
+
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n[k] = v; else n.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) n.append(c);
+  return n;
+}
+const count = (v) => offers.filter((o) => o.verdict === v).length;
+const when = new Date(run.startedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+const summary = `${run.searches.length} saved searches · ${offers.length} new offers · ${count("accepted")} accepted · ${count("rejected")} rejected · ${count("unjudged")} unjudged · $${run.costUsd.toFixed(4)}`;
+const searchByName = Object.fromEntries(run.searches.map((s) => [s.name, s]));
+const badge = (v) => el("span", { class: `badge ${v}` }, v);
+const link = (o, text = o.title) => el("a", { href: o.url, target: "_blank", rel: "noopener" }, text);
+
+// Description with lists kept: "- " lines become <ul>, other lines become paragraphs.
+function richDescription(text) {
+  const root = el("div", { class: "desc" });
+  let list = null;
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line) { list = null; continue; }
+    if (line.startsWith("- ")) { if (!list) root.append((list = el("ul"))); list.append(el("li", {}, line.slice(2))); }
+    else { list = null; root.append(el("p", {}, line)); }
+  }
+  return root;
+}
+async function copy(text, btn) {
+  try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
+  catch { window.prompt("Copy:", text); }
+  setTimeout(() => (btn.textContent = "Copy description"), 1500);
+}
+
+// ---------- Variant A: Digest (static markup only, mirrors the Markdown report) ----------
+function VariantA(root) {
+  const wrap = el("div", { class: "a-wrap" },
+    el("h1", {}, `Job offers, ${when}`),
+    el("p", { class: "muted" }, summary),
+  );
+  for (const s of run.searches) {
+    const mine = offers.filter((o) => o.search === s.name);
+    const sec = el("section", { class: "a-search" },
+      el("h2", {}, s.name),
+      el("div", { class: "muted" }, `${s.keywords} · ${s.location} · posted within ${s.postedWithin} · profile: “${s.profile}”`),
+    );
+    for (const o of mine.filter((o) => o.verdict === "accepted")) {
+      sec.append(el("article", { class: "a-offer" },
+        el("h3", {}, link(o), el("span", { class: "muted" }, `, ${o.company}`)),
+        el("div", { class: "muted" }, [o.location, o.postedDate && `posted ${o.postedDate}`].filter(Boolean).join(" · ")),
+        el("div", {}, [o.workMode, o.seniority, o.employmentType, o.salary].filter(Boolean).map((x) => el("span", { class: "chip" }, x))),
+        o.techStack.length ? el("div", {}, el("b", {}, "Stack: "), o.techStack.join(", ")) : null,
+        el("p", { class: "a-why" }, `Why: ${o.reason}`),
+        o.alsoFoundBy.length ? el("div", { class: "muted" }, `Also found by: ${o.alsoFoundBy.join(", ")}`) : null,
+        el("details", {}, el("summary", {}, "Description"), el("div", { class: "a-plain" }, o.description)),
+      ));
+    }
+    const rejected = mine.filter((o) => o.verdict === "rejected");
+    sec.append(el("details", { style: "margin-top:14px" },
+      el("summary", {}, `Rejected (${rejected.length})`),
+      el("ul", { class: "a-rejected" }, rejected.map((o) => el("li", {}, link(o), `, ${o.company}: `, el("span", { class: "muted" }, o.reason)))),
+    ));
+    wrap.append(sec);
+  }
+  const unjudged = offers.filter((o) => o.verdict === "unjudged");
+  wrap.append(el("section", { class: "a-search" },
+    el("h2", {}, `Unjudged (${unjudged.length})`),
+    el("p", { class: "muted" }, "These could not be judged and will not be retried."),
+    el("ul", {}, unjudged.map((o) => el("li", {}, link(o), `, ${o.company}: `, el("span", { class: "muted" }, o.reason)))),
+  ));
+  root.append(wrap);
+}
+
+// ---------- Variant B: Triage table (one sortable, filterable table across all searches) ----------
+function VariantB(root) {
+  const st = { verdict: "accepted", search: "", mode: "", q: "", sort: "postedDate", dir: -1, open: new Set() };
+  const cols = [
+    ["postedDate", "Posted"], ["title", "Title"], ["company", "Company"], ["search", "Search"],
+    ["workMode", "Mode"], ["seniority", "Seniority"], ["salary", "Salary"], ["techStack", "Stack"], ["verdict", "Verdict"],
+  ];
+  const body = el("div");
+  root.append(el("div", { class: "b-wrap" },
+    el("div", { class: "b-head" }, el("h1", {}, `Job offers, ${when}`), el("span", { class: "muted" }, summary)),
+    body,
+  ));
+  function draw() {
+    const rows = offers
+      .filter((o) => !st.verdict || o.verdict === st.verdict)
+      .filter((o) => !st.search || o.search === st.search)
+      .filter((o) => !st.mode || (st.mode === "none" ? !o.workMode : o.workMode === st.mode))
+      .filter((o) => !st.q || JSON.stringify([o.title, o.company, o.techStack, o.description]).toLowerCase().includes(st.q.toLowerCase()))
+      .sort((a, b) => st.dir * String(a[st.sort] ?? "").localeCompare(String(b[st.sort] ?? "")));
+    const seg = el("div", { class: "b-seg" }, [["", "All"], ["accepted", "Accepted"], ["rejected", "Rejected"], ["unjudged", "Unjudged"]]
+      .map(([v, label]) => el("button", { class: st.verdict === v ? "on" : "", onclick: () => { st.verdict = v; draw(); } }, `${label} ${v ? count(v) : offers.length}`)));
+    const searchSel = el("select", { onchange: (e) => { st.search = e.target.value; draw(); } },
+      el("option", { value: "" }, "All searches"), run.searches.map((s) => el("option", { value: s.name, selected: st.search === s.name }, s.name)));
+    const modeSel = el("select", { onchange: (e) => { st.mode = e.target.value; draw(); } },
+      [["", "Any work mode"], ["remote", "remote"], ["hybrid", "hybrid"], ["on-site", "on-site"], ["none", "not stated"]]
+        .map(([v, l]) => el("option", { value: v, selected: st.mode === v }, l)));
+    const q = el("input", { type: "text", placeholder: "Filter by title, company, stack, text…", value: st.q });
+    q.oninput = () => { st.q = q.value; draw(); const again = body.querySelector("input"); again.focus(); again.setSelectionRange(st.q.length, st.q.length); };
+    const table = el("table", {},
+      el("thead", {}, el("tr", {}, cols.map(([k, label]) => el("th", { onclick: () => { st.dir = st.sort === k ? -st.dir : 1; st.sort = k; draw(); } },
+        label + (st.sort === k ? (st.dir === 1 ? " ▲" : " ▼") : ""))))),
+      el("tbody", {}, rows.flatMap((o) => {
+        const row = el("tr", { class: "b-row", onclick: () => { st.open.has(o.id) ? st.open.delete(o.id) : st.open.add(o.id); draw(); } },
+          el("td", { class: "muted" }, o.postedDate ?? ""), el("td", {}, el("b", {}, o.title)), el("td", {}, o.company),
+          el("td", { class: "muted" }, o.search), el("td", {}, o.workMode ?? "–"), el("td", {}, o.seniority ?? "–"),
+          el("td", {}, o.salary ?? "–"), el("td", {}, el("div", { class: "b-stack", title: o.techStack.join(", ") }, o.techStack.join(", "))),
+          el("td", {}, badge(o.verdict)));
+        if (!st.open.has(o.id)) return [row];
+        const copyBtn = el("button", { class: "btn", onclick: (e) => { e.stopPropagation(); copy(o.description, copyBtn); } }, "Copy description");
+        const detail = el("tr", { class: "b-detail" }, el("td", { colspan: cols.length },
+          el("div", { class: "b-detail-grid" },
+            el("div", {},
+              el("p", { style: "margin-top:0" }, badge(o.verdict), " ", o.reason),
+              el("div", { class: "muted" }, o.location),
+              el("div", {}, [o.employmentType, o.jobFunction, o.industries].filter(Boolean).map((x) => el("span", { class: "chip" }, x))),
+              o.alsoFoundBy.length ? el("div", { class: "muted" }, `Also found by: ${o.alsoFoundBy.join(", ")}`) : null,
+              el("div", { class: "c-actions" }, el("a", { class: "btn primary", href: o.url, target: "_blank", rel: "noopener" }, "Open on LinkedIn"), copyBtn),
+            ),
+            richDescription(o.description),
+          )));
+        return [row, detail];
+      })),
+    );
+    body.replaceChildren(
+      el("div", { class: "b-tools" }, seg, searchSel, modeSel, q),
+      el("div", { class: "muted", style: "margin-bottom:6px;font-size:13px" }, `Showing ${rows.length} of ${offers.length} · click a row to expand · click a header to sort`),
+      el("div", { class: "b-scroll" }, table),
+    );
+  }
+  draw();
+}
+
+// ---------- Variant C: Inbox (list on the left, reading pane on the right) ----------
+function VariantC(root) {
+  const st = { tab: "accepted", sel: null };
+  const list = el("div", { class: "c-list" });
+  const pane = el("div", { class: "c-pane" });
+  root.append(el("div", { class: "c-wrap" }, list, pane));
+  const current = () => offers.filter((o) => o.verdict === st.tab);
+  function draw() {
+    const items = current();
+    if (!items.some((o) => o.id === st.sel)) st.sel = items[0]?.id ?? null;
+    list.replaceChildren(
+      el("div", { class: "c-top" }, el("h1", {}, `Job offers, ${when}`), el("div", { class: "muted", style: "font-size:13px" }, summary),
+        el("div", { class: "muted", style: "font-size:12px;margin-top:4px" }, "j / k to move through the list")),
+      el("div", { class: "c-tabs" }, ["accepted", "rejected", "unjudged"].map((t) =>
+        el("button", { class: st.tab === t ? "on" : "", onclick: () => { st.tab = t; st.sel = null; draw(); } }, `${t[0].toUpperCase() + t.slice(1)} ${count(t)}`))),
+      items.map((o) => el("div", { class: `c-item ${o.id === st.sel ? "on" : ""}`, onclick: () => { st.sel = o.id; draw(); } },
+        el("div", { class: "t" }, o.title),
+        el("div", { class: "s" }, [o.company, o.workMode, o.postedDate].filter(Boolean).join(" · ")),
+        el("div", { class: "s" }, o.search),
+      )),
+    );
+    const o = offers.find((x) => x.id === st.sel);
+    if (!o) { pane.replaceChildren(el("p", { class: "muted" }, "Nothing here.")); return; }
+    const copyBtn = el("button", { class: "btn", onclick: () => copy(o.description, copyBtn) }, "Copy description");
+    const dl = (pairs) => el("dl", {}, pairs.flatMap(([k, v]) => [el("dt", {}, k), el("dd", {}, v || "–")]));
+    pane.replaceChildren(
+      el("h2", {}, o.title),
+      el("div", { class: "muted" }, `${o.company} · ${o.location}`),
+      el("div", { class: "c-actions" }, el("a", { class: "btn primary", href: o.url, target: "_blank", rel: "noopener" }, "Open on LinkedIn"), copyBtn),
+      el("div", { class: `c-callout ${o.verdict}` }, badge(o.verdict), " ", el("span", {}, o.reason)),
+      el("div", { class: "c-fields" },
+        el("section", {}, el("h4", {}, "From LinkedIn"), dl([["Posted", o.postedDate], ["Salary", o.salary], ["Employment", o.employmentType], ["Function", o.jobFunction], ["Industries", o.industries]])),
+        el("section", {}, el("h4", {}, "Judged by the model"), dl([["Work mode", o.workMode], ["Seniority", o.seniority], ["Stack", o.techStack.join(", ")]])),
+        el("section", {}, el("h4", {}, "Found by"), dl([["Search", o.search], ["Profile", searchByName[o.search].profile], ["Also found by", o.alsoFoundBy.join(", ")]])),
+      ),
+      richDescription(o.description),
+    );
+    pane.scrollTop = 0;
+  }
+  document.onkeydown = (e) => {
+    if (currentKey() !== "C" || e.target.closest("input, textarea, select, [contenteditable]")) return;
+    if (e.key !== "j" && e.key !== "k") return;
+    const items = current(); const i = items.findIndex((o) => o.id === st.sel);
+    const next = items[Math.min(items.length - 1, Math.max(0, i + (e.key === "j" ? 1 : -1)))];
+    if (next) { st.sel = next.id; draw(); list.querySelector(".c-item.on")?.scrollIntoView({ block: "nearest" }); }
+  };
+  draw();
+}
+
+// ---------- Prototype switcher ----------
+const VARIANTS = [["A", "Digest", VariantA], ["B", "Triage table", VariantB], ["C", "Inbox", VariantC]];
+function currentKey() { const v = new URLSearchParams(location.search).get("variant"); return VARIANTS.some(([k]) => k === v) ? v : "A"; }
+function show(key) {
+  const url = new URL(location.href); url.searchParams.set("variant", key); history.replaceState(null, "", url);
+  const [k, name, render] = VARIANTS.find(([k]) => k === key);
+  document.getElementById("label").textContent = `${k} (${name})`;
+  document.onkeydown = null;
+  const app = document.getElementById("app"); app.replaceChildren(); render(app); window.scrollTo(0, 0);
+}
+function step(d) { const i = VARIANTS.findIndex(([k]) => k === currentKey()); show(VARIANTS[(i + d + VARIANTS.length) % VARIANTS.length][0]); }
+document.getElementById("prev").onclick = () => step(-1);
+document.getElementById("next").onclick = () => step(1);
+window.addEventListener("keydown", (e) => {
+  if (e.target.closest("input, textarea, select, [contenteditable]")) return;
+  if (e.key === "ArrowLeft") step(-1); if (e.key === "ArrowRight") step(1);
+});
+show(currentKey());
+</script>
+</body>
+</html>
