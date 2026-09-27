@@ -45,7 +45,7 @@ An offer whose verdict says it does not match the profile. Rejection comes only 
 _Avoid_: Filtered offer, discarded offer
 
 **Unjudged offer**:
-An offer the LLM failed to give a verdict on. It still appears in the report and becomes seen; only an explicit rejudge retries it.
+An offer the LLM failed to give a verdict on. It still appears in the report and becomes seen; only an explicit rejudge retries it. An offer whose details could not be fetched from LinkedIn is not unjudged: it never reaches the LLM, the report or the seen offers, so a later run picks it up again.
 _Avoid_: Failed offer, errored offer
 
 **Parsed field**:
@@ -61,6 +61,10 @@ _Avoid_: Extracted field, metadata, enrichment
 **Run**:
 One invocation of the tool, covering one or more saved searches, that produces one report.
 _Avoid_: Job, execution, fetch
+
+**Partial search**:
+A saved search that a run gave up on partway through, because LinkedIn kept failing or rate-limited the run. The offers it handled before stopping are kept and marked seen, and the run counts as incomplete.
+_Avoid_: Failed search, aborted search
 
 **Report**:
 The output of a run, written as both Markdown and HTML: one table of every offer the run handled (accepted, rejected and unjudged) with its verdict, followed by each offer's details.
