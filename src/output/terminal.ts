@@ -112,12 +112,27 @@ function searchBlock(search: SearchResult): string[] {
   const heading = search.partial
     ? `${search.label} (partial: ${search.partial.reason})`
     : search.label;
-  return [
+  const line = (label: string, value: string) =>
+    `  ${label.padEnd(LABEL_WIDTH)}  ${value}`;
+  const c = search.counts;
+  const lines = [
     heading,
-    ...COUNT_LABELS.map(
-      ([key, label]) => `  ${label.padEnd(LABEL_WIDTH)}  ${search.counts[key]}`,
-    ),
+    ...COUNT_LABELS.map(([key, label]) => line(label, String(c[key]))),
   ];
+  // The --all and --rejudge counts only appear when those flags did something.
+  if (c.seenIncluded > 0) {
+    lines.push(line("seen included", String(c.seenIncluded)));
+  }
+  const rejudged = c.rejudgedAccepted + c.rejudgedRejected + c.rejudgedUnjudged;
+  if (rejudged > 0) {
+    lines.push(
+      line(
+        "rejudged",
+        `${rejudged} (${c.rejudgedAccepted} accepted, ${c.rejudgedRejected} rejected, ${c.rejudgedUnjudged} unjudged)`,
+      ),
+    );
+  }
+  return lines;
 }
 
 const STOP_LABELS: Record<NonNullable<RunStop>["kind"], string> = {

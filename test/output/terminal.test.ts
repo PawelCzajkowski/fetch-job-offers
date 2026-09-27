@@ -34,6 +34,10 @@ const counts = (over: Partial<SearchCounts> = {}): SearchCounts => ({
   unjudged: 0,
   removed: 0,
   unfetched: 0,
+  seenIncluded: 0,
+  rejudgedAccepted: 0,
+  rejudgedRejected: 0,
+  rejudgedUnjudged: 0,
   ...over,
 });
 
@@ -205,6 +209,33 @@ describe("formatSummary", () => {
     outputTokens: 32_600,
     reasoningTokens: 25_000,
   };
+
+  it("adds the --all and --rejudge counts only when they are non-zero", () => {
+    const text = formatSummary(
+      result({
+        searches: [
+          search("java-krakow", {
+            cardsFetched: 10,
+            new: 2,
+            accepted: 2,
+            seenIncluded: 5,
+            rejudgedAccepted: 1,
+            rejudgedRejected: 1,
+            rejudgedUnjudged: 1,
+          }),
+          search("ts-remote", { cardsFetched: 10, new: 1, rejected: 1 }),
+        ],
+      }),
+      { model: "gpt-6-luna", reportPaths: [] },
+    );
+    const [krakow = "", remote = ""] = text.split("\n\n");
+    expect(krakow).toContain("  seen included  5");
+    expect(krakow).toContain(
+      "  rejudged       3 (1 accepted, 1 rejected, 1 unjudged)",
+    );
+    expect(remote).not.toContain("seen included");
+    expect(remote).not.toContain("rejudged");
+  });
 
   it("prints a block per search with every count, a partial reason, and the totals", () => {
     const text = formatSummary(
