@@ -1,0 +1,3 @@
+# Node runs the TypeScript directly, with no build step
+
+The tool is run by Node 24 or later straight from `src/*.ts` using Node's built-in type stripping. There is no `tsc` build, no `dist/` and no `tsx`, and `tsc --noEmit` only type-checks. We chose this so that what runs is exactly what was written, which keeps an agent-built codebase to one moving part; it was verified to work through the `pnpm link --global` bin symlink. The cost is that only erasable TypeScript syntax is allowed: no `enum`, `namespace` or constructor parameter properties, and relative imports carry their `.ts` extension. `erasableSyntaxOnly` in the tsconfig enforces this, so don't "fix" an error it raises by adding `tsx` or a build step.
