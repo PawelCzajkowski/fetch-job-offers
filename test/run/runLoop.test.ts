@@ -200,6 +200,19 @@ describe("runSearches", () => {
       ]);
     });
 
+    it("reports a normal run as not dry, not stopped, with every search run and every offer new", async () => {
+      const s = search();
+      const { deps } = setup(pagesFor(s, PAGE_A));
+
+      const result = await runSearches([s], deps);
+
+      expect(result.dryRun).toBe(false);
+      expect(result.stopped).toBeNull();
+      expect(result.notRun).toEqual([]);
+      expect(result.offers.length).toBeGreaterThan(0);
+      expect(result.offers.every((o) => o.origin === "new")).toBe(true);
+    });
+
     it("merges the card and the detail into the offer data and judges it with the search's profile", async () => {
       const s = search();
       const { deps, judge, store } = setup(pagesFor(s, PAGE_A));

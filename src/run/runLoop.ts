@@ -75,6 +75,19 @@ export interface SearchResult extends RunSearchInfo {
   partial: PartialReason;
 }
 
+/** How a handled offer got into the run; see `HandledOffer.origin`. */
+export type OfferOrigin = "new" | "seen" | "rejudged";
+
+/**
+ * Why the whole run stopped before its last search, or `null` when every
+ * search ran: LinkedIn kept rate-limiting (a persistent 429) or the user
+ * pressed Ctrl-C. The failure rules that set it are #23's.
+ */
+export type RunStop = {
+  kind: "rate-limited" | "aborted";
+  reason: string;
+} | null;
+
 /**
  * One offer handled under one profile: a row in the report. The same job ID
  * handled under two profiles gives two handled offers sharing offer data.
@@ -84,10 +97,12 @@ export interface HandledOffer {
   /** The profile it was judged against, as written by `foundBy`'s search. */
   profile: string;
   /**
-   * How it got into the run. This ticket only produces `"new"`; #23 adds
-   * seen offers included by `--all` and ones rejudged by `--rejudge`.
+   * How it got into the run: `"new"` (judged for the first time under this
+   * profile), `"seen"` (seen before and included by `--all`, with its stored
+   * verdict) or `"rejudged"` (a stored unjudged offer judged again by
+   * `--rejudge`). The core loop only produces `"new"`; #23 adds the others.
    */
-  origin: "new";
+  origin: OfferOrigin;
   /** Card and detail data, as stored (with `firstSeenAt`). */
   offer: StoredOffer;
   /** The verdict as stored: accepted, rejected or unjudged. */
@@ -107,6 +122,12 @@ export interface RunResult {
   offers: HandledOffer[];
   /** Token usage summed over every judge call. */
   usage: TokenUsage;
+  /** A dry run: the store was left untouched (set by #23). */
+  dryRun: boolean;
+  /** Set when the run stopped before its last search (set by #23). */
+  stopped: RunStop;
+  /** Searches that never started because the run stopped (filled by #23). */
+  notRun: RunSearchInfo[];
 }
 
 /** Progress, for the stderr lines (formatted by another module). */
@@ -192,6 +213,9 @@ export async function runSearches(
     searches: [],
     offers: [],
     usage: { inputTokens: 0, outputTokens: 0, reasoningTokens: 0 },
+    dryRun: false,
+    stopped: null,
+    notRun: [],
   };
   const state: RunState = {
     result,
