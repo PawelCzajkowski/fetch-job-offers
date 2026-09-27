@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parseDetailPage } from "../../src/linkedin/detailPage.ts";
+import {
+  buildDetailUrl,
+  parseDetailPage,
+} from "../../src/linkedin/detailPage.ts";
 
 const fixture = (name: string) =>
   readFileSync(
@@ -130,6 +133,14 @@ describe("parseDetailPage", () => {
 
     expect(parseDetailPage(html).description).toBe(
       "About The Role\nBuild things\n\n- one\n- two",
+    );
+  });
+});
+
+describe("buildDetailUrl", () => {
+  it("points at the guest job posting endpoint for the job ID", () => {
+    expect(buildDetailUrl("4464163116")).toBe(
+      "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/4464163116",
     );
   });
 });
