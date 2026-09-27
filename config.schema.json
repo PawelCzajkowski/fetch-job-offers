@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "Path or URL of this file's JSON Schema, for editors.",
+      "type": "string"
+    },
+    "model": {
+      "default": "gpt-6-luna",
+      "description": "OpenAI model that judges offers.",
+      "type": "string",
+      "minLength": 1
+    },
+    "outputDir": {
+      "default": "reports",
+      "description": "Directory for reports, relative to this config file.",
+      "type": "string",
+      "minLength": 1
+    },
+    "seenStore": {
+      "default": "seen.json",
+      "description": "File remembering seen offers, relative to this config file.",
+      "type": "string",
+      "minLength": 1
+    },
+    "searches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "description": "Unique slug naming this saved search, e.g. java-warsaw. Used with --search."
+          },
+          "keywords": {
+            "type": "string",
+            "minLength": 1,
+            "description": "LinkedIn search keywords, e.g. Java Backend Developer."
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Free-text LinkedIn location, e.g. Warsaw, Poland."
+          },
+          "postedWithin": {
+            "default": "7d",
+            "description": "Only offers posted within this window: <number>h or <number>d.",
+            "type": "string",
+            "pattern": "^[1-9]\\d*[hd]$"
+          },
+          "maxOffers": {
+            "default": 100,
+            "description": "Maximum number of new offers to fetch and judge per run.",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "profile": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The kind of work this search looks for, e.g. Java development. Offers are judged against it."
+          }
+        },
+        "required": [
+          "name",
+          "keywords",
+          "location",
+          "profile"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Saved searches, each with its criteria and profile."
+    }
+  },
+  "required": [
+    "searches"
+  ],
+  "additionalProperties": false
+}
