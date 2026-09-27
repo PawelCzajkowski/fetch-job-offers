@@ -1,0 +1,32 @@
+{
+  "name": "fetch-job-offers",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fetches LinkedIn job offers, has an LLM judge them against a profile, and reports the ones not shown before.",
+  "type": "module",
+  "packageManager": "pnpm@10.17.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "bin": {
+    "fetch-job-offers": "./src/cli.ts",
+    "fjo": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "check": "biome check .",
+    "test": "vitest run",
+    "verify": "pnpm typecheck && pnpm check && pnpm test"
+  },
+  "dependencies": {
+    "cheerio": "1.2.0",
+    "openai": "7.23.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@types/node": "26.6.3",
+    "typescript": "7.0.2",
+    "vitest": "5.0.2"
+  }
+}
