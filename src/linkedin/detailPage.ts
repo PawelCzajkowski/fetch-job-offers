@@ -1,5 +1,13 @@
 import * as cheerio from "cheerio";
 
+const DETAIL_ENDPOINT =
+  "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting";
+
+/** The LinkedIn guest detail page URL for one offer (spec section 5). */
+export function buildDetailUrl(jobId: string): string {
+  return `${DETAIL_ENDPOINT}/${encodeURIComponent(jobId)}`;
+}
+
 export interface OfferDetail {
   salary: string | null;
   employmentType: string | null;
