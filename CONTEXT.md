@@ -45,7 +45,7 @@ An offer whose verdict says it does not match the profile. Rejection comes only 
 _Avoid_: Filtered offer, discarded offer
 
 **Unjudged offer**:
-An offer the LLM failed to give a verdict on. It still appears in the report, in its own section, and becomes seen.
+An offer the LLM failed to give a verdict on. It still appears in the report and becomes seen; only an explicit rejudge retries it.
 _Avoid_: Failed offer, errored offer
 
 **Parsed field**:
@@ -67,7 +67,7 @@ The output of a run, written as both Markdown and HTML: one table of every offer
 _Avoid_: Digest, export, results file
 
 **Seen offer**:
-An offer that has already appeared in a report, whether accepted, rejected or unjudged, and so is left out of later reports.
+An offer that has already appeared in a report under a given profile, whether accepted, rejected or unjudged, and so is left out of later reports for any search with that same profile. Under a different profile, the same offer is still new.
 _Avoid_: Known offer, processed offer, history
 
 **Dry run**:
