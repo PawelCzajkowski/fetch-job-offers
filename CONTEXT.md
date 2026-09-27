@@ -11,7 +11,7 @@ A single job posting on LinkedIn, identified by its LinkedIn job ID.
 _Avoid_: Job, posting, listing, ad
 
 **Search criteria**:
-The set of filters sent to LinkedIn: title, location, date posted and work mode.
+The set of filters sent to LinkedIn: title, location and date posted.
 _Avoid_: Query, filters, params
 
 **Saved search**:
