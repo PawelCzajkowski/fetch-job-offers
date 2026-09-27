@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "check": "biome check .",
     "test": "vitest run",
-    "verify": "pnpm typecheck && pnpm check && pnpm test"
+    "verify": "pnpm typecheck && pnpm check && pnpm test",
+    "schema": "node scripts/schema.ts"
   },
   "dependencies": {
     "cheerio": "1.2.0",
