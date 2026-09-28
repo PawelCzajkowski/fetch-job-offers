@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -43,6 +43,22 @@ describe("cli", () => {
     const { stdout, status } = runCli(["-h"]);
     expect(status).toBe(0);
     expect(stdout).toContain("Usage");
+  });
+
+  it("exits quietly when its stdout is closed early, as with `| head`", async () => {
+    const { OPENAI_API_KEY: _ignored, ...env } = process.env;
+    const child = spawn("node", [CLI, "--help"], { env });
+    // Close the read end before the child writes, so its writes hit EPIPE.
+    child.stdout.destroy();
+    let stderr = "";
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    const status = await new Promise<number | null>((resolve) =>
+      child.on("close", (code) => resolve(code)),
+    );
+    expect(stderr).toBe("");
+    expect(status).toBe(0);
   });
 
   it("fails with the init hint when run with no config", () => {
