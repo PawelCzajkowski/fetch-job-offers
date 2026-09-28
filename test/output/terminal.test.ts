@@ -353,6 +353,20 @@ describe("formatSummary", () => {
     expect(text).not.toContain("Reports:");
   });
 
+  it("says why the report failed instead of claiming there were no offers", () => {
+    const text = formatSummary(result({ searches: [search("java-krakow")] }), {
+      model: "gpt-6-luna",
+      reportPaths: [],
+      reportError: "EISDIR: illegal operation on a directory",
+    });
+    expect(
+      text.endsWith(
+        "Report not written: EISDIR: illegal operation on a directory\n",
+      ),
+    ).toBe(true);
+    expect(text).not.toContain("No new offers");
+  });
+
   it("shows cost unknown for a model outside the price table", () => {
     const text = formatSummary(result({ usage }), {
       model: "gpt-6-sol",

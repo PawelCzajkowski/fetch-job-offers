@@ -1,16 +1,26 @@
 #!/usr/bin/env node
-import { HELP_TEXT } from "./help.ts";
+import OpenAI from "openai";
+import { abortOnInterrupt } from "./interrupt.ts";
+import { main } from "./main.ts";
 
-function main(argv: string[]): void {
-  // Placeholder CLI: only --help is wired up so far. Later tickets add the
-  // `init` subcommand, flag parsing and the run itself (see the spec).
-  if (argv.includes("--help") || argv.includes("-h") || argv.length === 0) {
-    console.log(HELP_TEXT);
-    process.exit(0);
-  }
+// The real process wired into `main`; everything else lives there.
+const stdout = (text: string) => void process.stdout.write(text);
+const stderr = (text: string) => void process.stderr.write(text);
 
-  console.error(HELP_TEXT);
-  process.exit(1);
-}
+const code = await main(process.argv.slice(2), {
+  cwd: process.cwd(),
+  stdout,
+  stderr,
+  vars: process.env,
+  loadEnvFile: (path) => process.loadEnvFile(path),
+  fetch: globalThis.fetch,
+  createJudgeClient: (apiKey) => new OpenAI({ apiKey }),
+  now: () => new Date(),
+  signal: abortOnInterrupt({ process, exit: (n) => process.exit(n), stderr }),
+});
 
-main(process.argv.slice(2));
+// Exit once stdout and stderr have flushed, so a piped summary isn't cut off.
+const flushed = (stream: NodeJS.WriteStream) =>
+  new Promise<void>((resolve) => stream.write("", () => resolve()));
+await Promise.all([flushed(process.stdout), flushed(process.stderr)]);
+process.exit(code);
