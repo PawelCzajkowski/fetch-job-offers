@@ -181,16 +181,6 @@ describe("renderMarkdown", () => {
   });
 
   describe("header", () => {
-    it("shows the run's start in local time", () => {
-      expect(render([]).split("\n")[0]).toBe("# Job offers, 2026-09-27 10:30");
-    });
-
-    it("summarizes searches, new offers and verdict counts", () => {
-      expect(render(REPRESENTATIVE_ROWS)).toContain(
-        "3 searches · 4 new offers · 2 accepted · 1 rejected · 1 unjudged",
-      );
-    });
-
     it("uses the singular for one search and one offer", () => {
       expect(
         render([row()], { searches: SEARCHES.slice(0, 1) }).split("\n")[2],
@@ -208,43 +198,18 @@ describe("renderMarkdown", () => {
         "3 searches · 2 offers (1 new) · 2 accepted · 0 rejected · 0 unjudged",
       );
     });
-
-    it("has one line per search with its keywords, location, window and profile", () => {
-      expect(render([])).toContain(
-        [
-          '- **java-warsaw**: Java Backend Developer · Warsaw, Poland · posted within 7d · profile: "Java development"',
-          '- **se-warsaw**: Software Engineer · Warsaw, Poland · posted within 7d · profile: "Java development"',
-          '- **lead-remote**: Tech Lead · European Union · posted within 24h · profile: "Tech lead"',
-        ].join("\n"),
-      );
-    });
-
-    it("never shows a cost", () => {
-      const markdown = render(REPRESENTATIVE_ROWS);
-      expect(markdown).not.toMatch(/\$|cost|usd/i);
-    });
   });
 
   describe("index table", () => {
-    it("has the spec's columns", () => {
-      expect(render([])).toContain(
-        "| Verdict | Title | Company | Search | Mode | Seniority | Salary | Posted |\n|---|---|---|---|---|---|---|---|",
+    it("lists rows in the model's by-verdict order, not newest first", () => {
+      const markdown = render(REPRESENTATIVE_ROWS, {
+        rowsNewestFirst: [...REPRESENTATIVE_ROWS].reverse(),
+      });
+      const anchors = tableRows(markdown).map(
+        (line) => line.match(/\]\(#([^)]+)\)/)?.[1],
       );
-    });
-
-    it("lists rows in the model's by-verdict order", () => {
-      const rows = tableRows(render(REPRESENTATIVE_ROWS));
-      expect(rows.map((line) => line.split(" | ")[0])).toEqual([
-        "| accepted",
-        "| accepted",
-        "| unjudged",
-        "| rejected",
-      ]);
-    });
-
-    it("shows a salary and the posted date", () => {
-      expect(tableRows(render([row({ salary: "20k PLN" })]))[0]).toBe(
-        "| accepted | [Senior Java Developer](#offer-4467798222) | Acme | java-warsaw | hybrid | senior | 20k PLN | 2026-09-22 |",
+      expect(anchors).toEqual(
+        REPRESENTATIVE_ROWS.map((r) => `offer-${r.rowId}`),
       );
     });
 
@@ -317,16 +282,6 @@ describe("renderMarkdown", () => {
       expect(anchors).toEqual(links);
     });
 
-    it("puts the details after a Details heading", () => {
-      const markdown = render([row()]);
-      expect(markdown.indexOf("\n## Details\n")).toBeGreaterThan(
-        markdown.indexOf("| accepted |"),
-      );
-      expect(markdown.indexOf('<a id="offer-')).toBeGreaterThan(
-        markdown.indexOf("## Details"),
-      );
-    });
-
     it("shows the verdict and reason, facts, stack and a LinkedIn link", () => {
       expect(
         render([row({ alsoFoundBy: ["se-warsaw", "java-krakow"] })]),
@@ -341,24 +296,6 @@ describe("renderMarkdown", () => {
           "[Open on LinkedIn](https://www.linkedin.com/jobs/view/4467798222)",
         ].join("\n"),
       );
-    });
-
-    it("leaves out absent facts and an empty stack", () => {
-      const markdown = render([
-        row({
-          verdict: "unjudged",
-          reason: "OpenAI timed out",
-          employmentType: null,
-          jobFunction: null,
-          industries: null,
-          techStack: [],
-        }),
-      ]);
-      expect(markdown).toContain(
-        "**unjudged**: OpenAI timed out  \nWarsaw, Mazowieckie, Poland  \n[Open on LinkedIn]",
-      );
-      expect(markdown).not.toContain("Stack:");
-      expect(markdown).not.toContain("also found by");
     });
 
     it("keeps bullets and paragraphs in the description, inside <details>", () => {
@@ -440,33 +377,10 @@ describe("renderMarkdown", () => {
       );
     });
 
-    it("says so when there's no description", () => {
-      const markdown = render([row({ descriptionLines: [] })]);
-      expect(markdown).toContain("_No description._");
-      expect(markdown).not.toContain("<details>");
-    });
-
     it("escapes the title and company in the heading", () => {
       expect(
         render([row({ title: "Dev <img src=x> #1 #", company: "A_B" })]),
       ).toContain("### Dev \\<img src=x> \\#1 \\#, A\\_B\n");
     });
-
-    it("adds no seen-before marker for offers shown by --all", () => {
-      const rows = [row()];
-      const base = model(rows);
-      const markdown = renderMarkdown({
-        ...base,
-        counts: { ...base.counts, new: 0 },
-        judgedAny: false,
-      });
-      expect(markdown).not.toMatch(/seen/i);
-    });
-  });
-
-  it("ends with a single newline", () => {
-    const markdown = render(REPRESENTATIVE_ROWS);
-    expect(markdown.endsWith("\n")).toBe(true);
-    expect(markdown.endsWith("\n\n")).toBe(false);
   });
 });

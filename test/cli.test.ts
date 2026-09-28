@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { HELP_TEXT } from "../src/help.ts";
 
 const CLI = resolve("src/cli.ts");
 
@@ -35,14 +36,13 @@ describe("cli", () => {
   it("prints help text and exits 0 for --help", () => {
     const { stdout, status } = runCli(["--help"]);
     expect(status).toBe(0);
-    expect(stdout).toContain("fetch-job-offers");
-    expect(stdout).toContain("Usage");
+    expect(stdout).toBe(HELP_TEXT);
   });
 
   it("prints the same help text for -h", () => {
     const { stdout, status } = runCli(["-h"]);
     expect(status).toBe(0);
-    expect(stdout).toContain("Usage");
+    expect(stdout).toBe(HELP_TEXT);
   });
 
   it("exits quietly when its stdout is closed early, as with `| head`", async () => {
@@ -59,6 +59,14 @@ describe("cli", () => {
     );
     expect(stderr).toBe("");
     expect(status).toBe(0);
+  });
+
+  it("reports a bad command line on stderr and exits 1", () => {
+    const { stdout, stderr, status } = runCli(["--nope"], dir);
+    expect(status).toBe(1);
+    expect(stdout).toBe("");
+    expect(stderr).toMatch(/^Error: .*--nope/);
+    expect(stderr).not.toMatch(/\n\s+at /);
   });
 
   it("fails with the init hint when run with no config", () => {

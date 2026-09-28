@@ -554,6 +554,25 @@ describe("boot", () => {
     );
   });
 
+  it("falls back when the clipboard throws straight away", async () => {
+    const page = open();
+    page.env.copyText.mockImplementation(() => {
+      throw new Error("no clipboard");
+    });
+    dataRows(page)[0]?.fire("click");
+    const button = page.app
+      .byTag("button")
+      .find((b) => b.textContent === "Copy description");
+    if (!button) throw new Error("no copy button");
+    expect(() => button.fire("click")).not.toThrow();
+    await vi.waitFor(() =>
+      expect(page.env.fallbackCopy).toHaveBeenCalledWith(
+        "About us\n\nWe build things.\n- Java\n- Spring",
+      ),
+    );
+    expect(button.textContent).toBe("Copy description");
+  });
+
   it("keeps markup in offer text as plain text", () => {
     const evil = "</script><script>alert(1)</script><b>x</b>";
     const page = open(

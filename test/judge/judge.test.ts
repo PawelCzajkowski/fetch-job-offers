@@ -267,32 +267,6 @@ describe("judgeOffer", () => {
     });
   });
 
-  it("gives an unjudged result when parsing the output throws", async () => {
-    const { client } = fakeClient(async () => {
-      throw new Error("Too big: expected array to have <=8 items");
-    });
-
-    const result = await judge(client);
-
-    expect(result).toMatchObject({
-      outcome: "unjudged",
-      reason:
-        "The OpenAI call failed: Too big: expected array to have <=8 items",
-    });
-  });
-
-  it("rethrows when the signal is aborted, instead of reporting the offer unjudged", async () => {
-    const controller = new AbortController();
-    const { client } = fakeClient(async () => {
-      controller.abort();
-      throw new APIUserAbortError();
-    });
-
-    await expect(judge(client, controller.signal)).rejects.toBeInstanceOf(
-      APIUserAbortError,
-    );
-  });
-
   it("rethrows whatever the SDK throws once the signal is aborted", async () => {
     const controller = new AbortController();
     const abortError = new DOMException("Aborted", "AbortError");

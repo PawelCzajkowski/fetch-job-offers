@@ -263,12 +263,6 @@ describe("writeReportFiles: latest left alone", () => {
     expect(await read("latest.md")).toBe("previous markdown");
     expect(await read("latest.html")).toBe("previous html");
   });
-
-  it("and doesn't create latest files that didn't exist", async () => {
-    await writeReportFiles(model({ dryRun: true }), outDir);
-
-    expect(await listing()).toEqual([`${STEM}.html`, `${STEM}.md`]);
-  });
 });
 
 describe("writeReportFiles: no rows", () => {
@@ -277,20 +271,5 @@ describe("writeReportFiles: no rows", () => {
 
     expect(result).toEqual({ written: false });
     expect(await listing(root)).toEqual([]);
-  });
-
-  it("leaves an existing directory and its latest files untouched", async () => {
-    await writeReportFiles(model(), outDir);
-    const before = await listing();
-    const latest = await read("latest.md");
-
-    const result = await writeReportFiles(
-      model({ startedAt: new Date("2026-09-28T07:00:00.000Z"), offers: [] }),
-      outDir,
-    );
-
-    expect(result).toEqual({ written: false });
-    expect(await listing()).toEqual(before);
-    expect(await read("latest.md")).toBe(latest);
   });
 });

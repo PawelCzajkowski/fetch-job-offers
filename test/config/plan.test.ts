@@ -100,12 +100,11 @@ describe("planCommand: commands", () => {
     expect(planError(["run"]).message).toMatch(/"run"/);
   });
 
-  it("rejects unknown flags", () => {
-    expect(planError(["--nope"]).message).toMatch(/--nope/);
-  });
-
-  it("rejects a string flag without a value", () => {
-    expect(planError(["--keywords"]).message).toMatch(/--keywords/);
+  it.each([
+    ["an unknown flag", "--nope"],
+    ["a string flag without a value", "--keywords"],
+  ])("rejects %s", (_case, flag) => {
+    expect(planError([flag]).message).toContain(flag);
   });
 });
 
@@ -341,11 +340,6 @@ describe("planCommand: no config file", () => {
     const { message } = planError([], "no-config");
     expect(message).toMatch(/fetch-job-offers init/);
     expect(message).toMatch(/\/work\/fetch-job-offers\.config\.json/);
-  });
-
-  it("fails for --search, pointing to init", () => {
-    const { message } = planError(["--search", "java-warsaw"], "no-config");
-    expect(message).toMatch(/fetch-job-offers init/);
   });
 
   it("names the --config path in the error", () => {

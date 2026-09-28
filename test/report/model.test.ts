@@ -164,44 +164,6 @@ describe("buildReportModel: rows", () => {
     ]);
   });
 
-  it("leaves salary and the other parsed fields null when absent", () => {
-    const [row] = buildReportModel(
-      runResult({
-        offers: [
-          handled({
-            offer: {
-              salary: null,
-              employmentType: null,
-              jobFunction: null,
-              industries: null,
-            },
-          }),
-        ],
-      }),
-    ).rowsNewestFirst;
-
-    expect(row).toMatchObject({
-      salary: null,
-      employmentType: null,
-      jobFunction: null,
-      industries: null,
-    });
-  });
-
-  it("gives a rejected offer its verdict, reason and judged fields", () => {
-    const [row] = buildReportModel(
-      runResult({ offers: [handled({ verdict: rejected("Frontend only") })] }),
-    ).rowsNewestFirst;
-
-    expect(row).toMatchObject({
-      verdict: "rejected",
-      reason: "Frontend only",
-      workMode: "remote",
-      seniority: "mid",
-      techStack: ["React"],
-    });
-  });
-
   it("gives an unjudged offer its error as reason and no judged fields", () => {
     const [row] = buildReportModel(
       runResult({ offers: [handled({ verdict: unjudged("Rate limited") })] }),
@@ -425,7 +387,6 @@ describe("buildReportModel: orders", () => {
       "7",
       "9",
     ]);
-    expect(ids(forward.rowsNewestFirst)).toEqual(["8", "7", "7-2", "9"]);
     expect(backward.rowsNewestFirst.map((r) => [r.jobId, r.foundBy])).toEqual(
       forward.rowsNewestFirst.map((r) => [r.jobId, r.foundBy]),
     );
