@@ -148,9 +148,14 @@ const plural = (n: number, one: string, many: string) =>
 
 function summaryLine(model: ReportModel): string {
   const { counts } = model;
+  // Seen offers shown by --all make the rows outnumber the new ones.
+  const offers =
+    counts.new === counts.rows
+      ? plural(counts.new, "new offer", "new offers")
+      : `${plural(counts.rows, "offer", "offers")} (${counts.new} new)`;
   return [
     plural(model.searches.length, "search", "searches"),
-    plural(counts.new, "new offer", "new offers"),
+    offers,
     `${counts.accepted} accepted`,
     `${counts.rejected} rejected`,
     `${counts.unjudged} unjudged`,
