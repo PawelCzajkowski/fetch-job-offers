@@ -25,7 +25,21 @@ Global flags:
   --config <path>         Path to the config file
   --all                   Include offers already seen, with their stored verdict
   --rejudge               Retry unjudged offers from this run's results
-  --dry-run               Judge and report, but don't touch the seen store
+  --dry-run               Judge and write timestamped reports, but don't touch
+                          the seen store or latest.*
   --verbose               Log every LinkedIn request
   --help, -h              Show this help text
+
+Environment:
+  OPENAI_API_KEY          Required for a run. Read from the environment, or from
+                          a .env file next to the config (or in the current
+                          directory without one); the environment wins.
+
+Exit codes:
+  0    Every search completed
+  1    Fatal error before any work (bad flags or config, no key, corrupt store,
+       unwritable output), or the report couldn't be written
+  2    A search was partial, or LinkedIn kept rate-limiting and the run stopped
+  130  Stopped by Ctrl-C (the store and report are still written; press it
+       again to quit at once)
 `;

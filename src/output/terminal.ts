@@ -94,6 +94,8 @@ export interface SummaryOptions {
   model: string;
   /** The report files written; empty when no report was written. */
   reportPaths: readonly string[];
+  /** Set when writing the report failed; shown in place of the report paths. */
+  reportError?: string;
 }
 
 const COUNT_LABELS: ReadonlyArray<readonly [keyof SearchCounts, string]> = [
@@ -175,9 +177,11 @@ export function formatSummary(
       (cost === null ? "cost unknown" : `estimated cost ${formatCost(cost)}`),
   );
   lines.push(
-    options.reportPaths.length > 0
-      ? `Reports: ${options.reportPaths.join(", ")}`
-      : "No new offers, no report written",
+    options.reportError !== undefined
+      ? `Report not written: ${options.reportError}`
+      : options.reportPaths.length > 0
+        ? `Reports: ${options.reportPaths.join(", ")}`
+        : "No new offers, no report written",
   );
   return `${lines.join("\n")}\n`;
 }

@@ -1,2 +1,18 @@
-.claude/
+# Dependencies and agent worktrees
 node_modules/
+.claude/
+
+# Secrets: the OpenAI key. The committed .env.example holds placeholders only.
+.env
+.env.*
+!.env.example
+
+# What a run writes when you run the tool from this directory
+reports/
+seen.json
+# Temp files of the atomic writes; only left behind if the process is killed
+.seen.json.*.tmp
+
+# OS and editor clutter
+.DS_Store
+*.log
