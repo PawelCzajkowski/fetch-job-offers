@@ -138,6 +138,15 @@ describe("renderHtml", () => {
     );
   });
 
+  it("counts all rows and the new ones when --all adds seen offers, as the Markdown report does", () => {
+    const m = model();
+    m.counts = { ...m.counts, rows: 5, new: 2 };
+    const html = renderHtml(m, OPTIONS);
+    expect(header(html)).toContain(
+      "3 searches · 5 offers (2 new) · 2 accepted · 2 rejected · 1 unjudged",
+    );
+  });
+
   it("uses the singular for one search and one offer", () => {
     const m = model([row()]);
     m.searches = m.searches.slice(0, 1);
