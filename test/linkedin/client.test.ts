@@ -304,17 +304,29 @@ describe("createLinkedInClient", () => {
 
     it("stops the pacing wait and never requests", async () => {
       const { fetch, calls } = fakeFetch([{ status: 200 }]);
+      const delays: number[] = [];
+      let sleeping = () => {};
+      const asleep = new Promise<void>((resolve) => {
+        sleeping = resolve;
+      });
       const client = createLinkedInClient({
         fetch,
-        sleep: (_ms, signal) => untilAborted(signal),
+        sleep: (ms, signal) => {
+          delays.push(ms);
+          sleeping();
+          return untilAborted(signal);
+        },
         random: () => 0,
       });
       const controller = new AbortController();
+      const reason = new Error("stop");
 
       const pending = client.get(URL_A, controller.signal);
-      controller.abort();
+      await asleep;
+      controller.abort(reason);
 
-      await expect(pending).rejects.toThrow();
+      await expect(pending).rejects.toBe(reason);
+      expect(delays).toEqual([PACING_MS]);
       expect(calls).toHaveLength(0);
     });
 
@@ -383,6 +395,8 @@ describe("createLinkedInClient", () => {
       const reason = new Error("stop");
 
       const pending = client.get(URL_A, controller.signal);
+      // Let the request reach the pacing wait before aborting it.
+      await new Promise((resolve) => setImmediate(resolve));
       controller.abort(reason);
 
       await expect(pending).rejects.toBe(reason);

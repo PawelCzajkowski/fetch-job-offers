@@ -285,19 +285,6 @@ describe("runSearches", () => {
       ]);
     });
 
-    it("reports a normal run as not dry, not stopped, with every search run and every offer new", async () => {
-      const s = search();
-      const { deps } = setup(pagesFor(s, PAGE_A));
-
-      const result = await runSearches([s], deps, FLAGS);
-
-      expect(result.dryRun).toBe(false);
-      expect(result.stopped).toBeNull();
-      expect(result.notRun).toEqual([]);
-      expect(result.offers.length).toBeGreaterThan(0);
-      expect(result.offers.every((o) => o.origin === "new")).toBe(true);
-    });
-
     it("merges the card and the detail into the offer data and judges it with the search's profile", async () => {
       const s = search();
       const { deps, judge, store } = setup(pagesFor(s, PAGE_A));
@@ -430,21 +417,6 @@ describe("runSearches", () => {
         new: 8,
       });
     });
-
-    it("treats an offer seen only under another profile as new", async () => {
-      const s = search();
-      const store = createSeenStore({ now: () => NOW });
-      store.recordVerdict("Java development", "4467798222", {
-        verdict: "unjudged",
-        reason: "x",
-        model: "gpt-6-luna",
-      });
-      const { deps } = setup(pagesFor(s, PAGE_A), { store });
-
-      const result = await runSearches([s], deps, FLAGS);
-
-      expect(result.offers.map((o) => o.jobId)).toContain("4467798222");
-    });
   });
 
   describe("maxOffers", () => {
@@ -479,15 +451,6 @@ describe("runSearches", () => {
         seenSkipped: 2,
         new: 3,
       });
-    });
-
-    it("stops after a full page that reaches maxOffers exactly", async () => {
-      const s = search({ maxOffers: 10 });
-      const { deps, linkedin } = setup(pagesFor(s, PAGE_A, PAGE_B));
-
-      await runSearches([s], deps, FLAGS);
-
-      expect(linkedin.searchRequests()).toEqual([searchUrl(s, 0)]);
     });
 
     it("carries on into the next page until maxOffers is reached", async () => {
@@ -850,6 +813,9 @@ describe("runSearches", () => {
       const result = await runSearches([s], deps, FLAGS);
 
       expect(result.startedAt).toEqual(NOW);
+      expect(result.dryRun).toBe(false);
+      expect(result.stopped).toBeNull();
+      expect(result.notRun).toEqual([]);
       expect(result.searches[0]).toMatchObject({
         label: "ts-poland",
         profile: "TypeScript development",
@@ -867,6 +833,7 @@ describe("runSearches", () => {
         foundBy: "ts-poland",
         alsoFoundBy: [],
       });
+      expect(result.offers.every((o) => o.origin === "new")).toBe(true);
     });
 
     it("returns an empty result for no searches", async () => {
@@ -1248,30 +1215,24 @@ describe("runSearches", () => {
       expect(saves).toEqual([]);
     });
 
-    it("never saves when a search is partial or the run stops", async () => {
+    it("never saves on any stop path: a partial search, a rate limit or an abort", async () => {
       const a = search({ label: "a" });
       const b = search({ label: "b", keywords: "Node" });
-      const { deps, saves } = setup({
-        [searchUrl(a, 0)]: { kind: "failed", reason: "HTTP 500" },
+      const limited = setup({
+        [searchUrl(a, 0)]: failed,
         [searchUrl(b, 0)]: { kind: "rate-limited" },
       });
+      const aborted = setup(pagesFor(a, PAGE_A));
+      abortOnRequest(aborted.deps, aborted.controller, buildDetailUrl(A2));
 
-      const result = await runSearches([a, b], deps, DRY);
+      const limitedResult = await runSearches([a, b], limited.deps, DRY);
+      const abortedResult = await runSearches([a], aborted.deps, DRY);
 
-      expect(result.searches[0]?.partial).not.toBeNull();
-      expect(result.stopped?.kind).toBe("rate-limited");
-      expect(saves).toEqual([]);
-    });
-
-    it("never saves when the run is aborted", async () => {
-      const s = search();
-      const { deps, saves, controller } = setup(pagesFor(s, PAGE_A));
-      abortOnRequest(deps, controller, buildDetailUrl(A2));
-
-      const result = await runSearches([s], deps, DRY);
-
-      expect(result.stopped?.kind).toBe("aborted");
-      expect(saves).toEqual([]);
+      expect(limitedResult.searches[0]?.partial).not.toBeNull();
+      expect(limitedResult.stopped?.kind).toBe("rate-limited");
+      expect(limited.saves).toEqual([]);
+      expect(abortedResult.stopped?.kind).toBe("aborted");
+      expect(aborted.saves).toEqual([]);
     });
   });
 

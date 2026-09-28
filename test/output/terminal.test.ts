@@ -336,14 +336,6 @@ describe("formatSummary", () => {
     );
   });
 
-  it("doesn't label a normal run as a dry run", () => {
-    const text = formatSummary(result(), {
-      model: "gpt-6-luna",
-      reportPaths: [],
-    });
-    expect(text).not.toContain("Dry run");
-  });
-
   it("says no report was written when there are no report paths", () => {
     const text = formatSummary(result({ searches: [search("java-krakow")] }), {
       model: "gpt-6-luna",

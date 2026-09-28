@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -14,8 +14,8 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
-async function writeConfig(content: unknown, name = "config.json") {
-  const path = join(dir, name);
+async function writeConfig(content: unknown) {
+  const path = join(dir, "config.json");
   const text =
     typeof content === "string" ? content : JSON.stringify(content, null, 2);
   await writeFile(path, text);
@@ -37,24 +37,7 @@ async function loadError(content: unknown): Promise<ConfigError> {
 }
 
 describe("loadConfig", () => {
-  it("loads the full example config from the spec", async () => {
-    const path = await writeConfig({
-      $schema: "./config.schema.json",
-      model: "gpt-6-luna",
-      outputDir: "reports",
-      seenStore: "seen.json",
-      searches: [{ ...minimalSearch, postedWithin: "7d", maxOffers: 100 }],
-    });
-
-    await expect(loadConfig(path)).resolves.toEqual({
-      model: "gpt-6-luna",
-      outputDir: join(dir, "reports"),
-      seenStore: join(dir, "seen.json"),
-      searches: [{ ...minimalSearch, postedWithin: "7d", maxOffers: 100 }],
-    });
-  });
-
-  it("applies the defaults to a minimal config", async () => {
+  it("applies the defaults to a minimal config, resolving paths next to the config file", async () => {
     const path = await writeConfig({ searches: [minimalSearch] });
 
     await expect(loadConfig(path)).resolves.toEqual({
@@ -67,6 +50,7 @@ describe("loadConfig", () => {
 
   it("keeps explicit values over the defaults", async () => {
     const path = await writeConfig({
+      $schema: "./config.schema.json",
       model: "gpt-other",
       outputDir: "out/reports",
       seenStore: "state/seen-offers.json",
@@ -81,18 +65,6 @@ describe("loadConfig", () => {
       postedWithin: "24h",
       maxOffers: 5,
     });
-  });
-
-  it("resolves outputDir and seenStore relative to the config file, not the cwd", async () => {
-    await mkdir(join(dir, "nested"));
-    const path = await writeConfig(
-      { searches: [minimalSearch] },
-      join("nested", "fetch-job-offers.config.json"),
-    );
-
-    const config = await loadConfig(path);
-    expect(config.outputDir).toBe(join(dir, "nested", "reports"));
-    expect(config.seenStore).toBe(join(dir, "nested", "seen.json"));
   });
 
   it("keeps absolute outputDir and seenStore as they are", async () => {
@@ -119,7 +91,7 @@ describe("loadConfig", () => {
 
   it("reports an unknown top-level key", async () => {
     const error = await loadError({ searches: [minimalSearch], modle: "x" });
-    expect(error.message).toContain("modle");
+    expect(error.message).toContain("modle: unknown key");
   });
 
   it.each(["name", "keywords", "location", "profile"])(

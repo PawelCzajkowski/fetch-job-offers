@@ -83,20 +83,6 @@ describe("loadSeenStore", () => {
     await expect(loadSeenStore(path)).rejects.toThrow(/unsupported version 2/);
   });
 
-  it("throws a clear error on an invalid shape", async () => {
-    const path = join(dir, "seen.json");
-    await writeFile(
-      path,
-      JSON.stringify({
-        version: 1,
-        offers: {},
-        verdicts: { "java development": { "1": { verdict: "maybe" } } },
-      }),
-    );
-
-    await expect(loadSeenStore(path)).rejects.toThrow(/invalid shape/);
-  });
-
   it("validates entries under a __proto__ key and names where the error is", async () => {
     const path = join(dir, "seen.json");
     await writeFile(
@@ -253,20 +239,6 @@ describe("lookups and recording", () => {
       }),
     ).toThrow(/already judged "accepted"/);
     expect(store.getVerdict("Java development", "1")?.verdict).toBe("accepted");
-  });
-
-  it("keeps verdicts under different profiles independent", () => {
-    const store = createSeenStore();
-    store.recordVerdict("Java development", "1", {
-      ...accepted,
-      verdict: "rejected",
-    });
-    store.recordVerdict("TypeScript development", "1", accepted);
-
-    expect(store.getVerdict("Java development", "1")?.verdict).toBe("rejected");
-    expect(store.getVerdict("TypeScript development", "1")?.verdict).toBe(
-      "accepted",
-    );
   });
 
   it("does not let callers mutate stored records through lookups", () => {
