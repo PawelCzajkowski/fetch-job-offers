@@ -74,6 +74,10 @@ _Avoid_: Digest, export, results file
 An offer that has already appeared in a report under a given profile, whether accepted, rejected or unjudged, and so is left out of later reports for any search with that same profile. Under a different profile, the same offer is still new.
 _Avoid_: Known offer, processed offer, history
 
+**Visited offer**:
+An offer the user has marked by hand, while browsing a report, as one they have already looked at; they can unmark it again. The mark belongs to the offer itself (its LinkedIn job ID), not to any profile, so it shows in every report the offer appears in. Every visited offer is a seen offer, but a seen offer is only visited once the user marks it.
+_Avoid_: Seen, read, opened, applied
+
 **Dry run**:
 A run that produces a report without marking any offer as seen.
 _Avoid_: Preview, test run
